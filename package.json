@@ -1,0 +1,20 @@
+{
+  "name": "treehouse-project-6",
+  "version": "1.0.0",
+  "description": "Example of content scraper on node.js",
+  "main": "scrapper.js",
+  "scripts": {
+    "start": "node scrapper.js"
+  },
+  "author": "Max Eremin",
+  "license": "MIT",
+  "dependencies": {
+    "axios": "^0.18.0",
+    "ebri-scrap": "^2.0.1",
+    "json2csv": "^4.0.1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ermaxnet/treehouse-project-6.git"
+  }
+}
