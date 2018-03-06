@@ -3,8 +3,8 @@ const scrapper = require("ebri-scrap");
 const fs = require("fs");
 const json2csv = require("json2csv").parse;
 
-/* Функция логирования ошибок. Выводит сообщение об ошибке на консоль, а так же
-    записывает ошибку в файл scraper-error.log проставляя время возникновения ошибки. 
+/* The function of error logging. Displays an error message to the console, and also writes an error to the scraper-error.log file, 
+    stating the time of the error occurrence.     
 */
 const error = (err) => {
     const message = typeof err === "string" 
@@ -15,34 +15,34 @@ const error = (err) => {
     fs.appendFile(__dirname + "\\scraper-error.log", log + "\n", err => {
         if (err) {
             console.error(
-                "Невозможно произвести запись в файл с логами: " + err.message);
+                "Unable to write to log file: " + err.message);
         }
     });
 };
 
-/* Используя npm пакет ebri-scrap распарсить полученный html по схеме,
-    предложенной в options. К сожалению, я нигде не нашел информацию что этот
-    пакет скачали более 1000 раз, но почему это должно быть показателем крутизны?
-    Это очень новый пакет, и возможно через месяц у него будет 1000000 загрузок.
-    Главное, что это очень крутой пакет
+/* Using the npm package ebri-scrap, parse the resulting html according to the scheme proposed in the options. 
+    Unfortunately, I haven't found any information that this package was downloaded more than 1000 times, 
+	but why should this be an indicator of steepness? 
+	This is a very new package, and maybe in a month it will have 1,000,000 downloads. 
+	The main thing is that this is a really cool package	
 */
 const parseContent = ({ content, options }) => {
     const items = scrapper.parse(content, options);
     return items;
 };
 
-/* Я использую обертку axios, основанную на том же модуле node http.
-    Данная функция создает запрос по запрошенному url.
+/* I use an axios wrapper, based on the node http module. 
+    This function creates a query on the requested url.
 */
 const getContentRequest = url => {
     return axios.get(url);
 };
 
-// Глобальные переменные
+// Global variables
 const dataPath = __dirname + "\\data";
 const domainName = "http://shirts4mike.com/";
 const list = [];
-// Класс, описывающий единицу продукта
+// Class,describing a product unit
 class Product {
     constructor({ id, url, image }) {
         this.id = +id,
@@ -53,9 +53,9 @@ class Product {
         this.price = 0;
         this.time = null;
     }
-    /* Функция возвращает промис, основанный на http запросе за дополнительной
-        информацией о товаре. По результатам запроса к товару дописываются название, цена
-        и дата получения информации.
+    /* The function returns a promise based on the http request for product details. 
+	    As a result of the request name, price and date of receipt 
+		of information are added for the goods.		
     */
     detail() {
         return new Promise((resolve, reject) => {
@@ -80,8 +80,8 @@ class Product {
     }
 };
 
-/* Используя npm пакет json2csv преобразовать полученные результаты в csv и сохранить в файл
-    на текущую дату.
+/* Using the npm package json2csv convert the results into csv 
+    and save to a current date  file  
 */
 const saveAsCsv = () => {
     const csv = json2csv(list, {
@@ -123,14 +123,15 @@ const saveAsCsv = () => {
     );
 };
 
-/* Проверить, существует ли директория для csv файлов. Если не существует, то создать.
+/* Check if there is a directory for csv files. If it does not exist, 
+    then create.    
 */
 if(!fs.existsSync(dataPath)) {
     fs.mkdirSync(dataPath);
 }
 
-/* Начало работы приложения. Отправить основной запрос, распарсить его, создать 
-    список объектов типа Product. 
+/* Start the application. Send the main request, parse it, 
+    create a list of objects with type Product.    
 */
 getContentRequest(`${domainName}shirts.php`)
     .then(response => {
@@ -149,12 +150,12 @@ getContentRequest(`${domainName}shirts.php`)
         for (let item of items) {
             list.push(new Product(item));
         }
-        // Запустить запросы за дополнительными данными для всех продуктов.
+        // Run queries for additional data for all products.
         const details = list.map(product => product.detail());
-        // Промис, выполняющийся по завершению всех запросов
+        // Promise executed after all requests are completed
         Promise.all(details)
             .then(() => {
-                // Здесь мы можем быть уверены что все запросы завершены. Можно записать CSV
+                // Here we can be sure that all requests are completed. We can write CSV
                 saveAsCsv();
             })
             .catch(err => {

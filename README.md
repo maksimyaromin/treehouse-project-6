@@ -1,7 +1,9 @@
 # Build a Content Scraper
-В репозитории содержится пример реализации HTML-скраппера на Node.JS для сайта http://shirts4mike.com/shirts.php. После запуска приложения отправляется запрос на указанный адрес, получается HTML контент, парсится при помощи скраппера и записывается в CSV файл. Если приложение запустится более одного раза в день, то данные в CSV файле будут обновлены.
+The repository contains an example of implementing an HTML scrapper based on Node.JS for  http://shirts4mike.com/shirts.php. 
+After starting the application a request is sent to the specified address, where  HTML content is obtained and is parsed by scrapper and recorded in the CSV file.
+If the application is started more than once per day, the data in the CSV file will be updated.
 
-Для проекта использованы два NPM пакета:
+Two NPM packages were used for the project:
 1. [ebri-scrap](https://www.npmjs.com/package/ebri-scrap)
 2. [json2csv](https://www.npmjs.com/package/json2csv)
 
@@ -16,4 +18,3 @@ or
 ```
 
 ### I hope you will enjoy it. Max Eremin
-
