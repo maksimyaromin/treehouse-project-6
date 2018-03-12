@@ -1,7 +1,8 @@
 const axios = require("axios");
-const scrapper = require("ebri-scrap");
+const scrapper = require("cheerio");
 const fs = require("fs");
 const json2csv = require("json2csv").parse;
+const path = require("path");
 
 /* The function of error logging. Displays an error message to the console, and also writes an error to the scraper-error.log file, 
     stating the time of the error occurrence.     
@@ -12,7 +13,7 @@ const error = (err) => {
     const timeStamp = (new Date()).toString();
     const log = `[${timeStamp}] ${message}`;
     console.error(message);
-    fs.appendFile(__dirname + "\\scraper-error.log", log + "\n", err => {
+    fs.appendFile(path.join(__dirname, "scraper-error.log"), log + "\n", err => {
         if (err) {
             console.error(
                 "Unable to write to log file: " + err.message);
@@ -26,9 +27,9 @@ const error = (err) => {
 	This is a very new package, and maybe in a month it will have 1,000,000 downloads. 
 	The main thing is that this is a really cool package	
 */
-const parseContent = ({ content, options }) => {
-    const items = scrapper.parse(content, options);
-    return items;
+const parseContent = ({ content, parse }) => {
+    const $ = scrapper.load(content);
+    return parse($);
 };
 
 /* I use an axios wrapper, based on the node http module. 
@@ -39,7 +40,7 @@ const getContentRequest = url => {
 };
 
 // Global variables
-const dataPath = __dirname + "\\data";
+const dataPath = path.join(__dirname, "data");
 const domainName = "http://shirts4mike.com/";
 const list = [];
 // Class,describing a product unit
@@ -63,13 +64,20 @@ class Product {
                 .then(response => {
                     const detail = parseContent({
                         content: response.data,
-                        options: {
-                            price: ".shirt-details .price | format:number",
-                            title: ".shirt-details h1 | format:one-line-string"
+                        parse($) {
+                            const price = parseFloat(
+                                $(".shirt-details .price")
+                                    .text()
+                                    .match(/\d+/g)[0]
+                            );
+                            const title = $(".shirt-details h1")
+                                .text()
+                                .replace(/^\$\d+\s/g, "");
+                            return { price, title };
                         }
                     });
                     this.price = detail.price;
-                    this.title = detail.title.replace(/^\$\d+\s/g, "");
+                    this.title = detail.title;
                     this.time = new Date();
                     resolve();
                 })
@@ -85,11 +93,7 @@ class Product {
 */
 const saveAsCsv = () => {
     const csv = json2csv(list, {
-        fields: [ 
-            {
-                label: "Product ID",
-                value: "id"
-            },
+        fields: [
             {
                 label: "Title",
                 value: "title"
@@ -114,7 +118,8 @@ const saveAsCsv = () => {
     });
     const now = new Date();
     fs.writeFile(
-        `${dataPath}\\${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}.csv`, csv, 'utf8',
+        path.join(dataPath, 
+            `${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}.csv`), csv, 'utf8',
         err => {
             if(err) {
                 error(err.message);
@@ -137,15 +142,18 @@ getContentRequest(`${domainName}shirts.php`)
     .then(response => {
         const items = parseContent({
             content: response.data,
-            options: [{
-                containerSelector: ".products",
-                itemSelector: "li a",
-                data: {
-                    id: "a | extract:prop:href | format:regex:id=(.*):$1",
-                    url: `a | extract:prop:href | format:url:"${domainName}"`,
-                    image: `a img | extract:prop:src | format:url:"${domainName}"`
-                }
-            }]
+            parse($) {
+                const items = [];
+                $(".products li a").each((idx, element) => {
+                    const item = {
+                        url: `${domainName}${$(element).attr("href")}`,
+                        image: `${domainName}${$(element).find("img").attr("src")}`
+                    };
+                    item.id = item.url.match(/id=(.*)/i)[1];
+                    items.push(item);
+                });
+                return items;
+            }
         });
         for (let item of items) {
             list.push(new Product(item));
